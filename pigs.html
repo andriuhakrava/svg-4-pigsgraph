@@ -29,9 +29,6 @@
 	.circle-graph .pig2 { fill: orange; }
 </style>
 <body>
-	<!-- <span></span>
-	<svg viewBox=" 0 0 800 600"></svg> -->
-	<!-- <div class="svg"></div> -->
 	<svg class="graph1" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg"></svg>
 	<br />
 	<br />
@@ -44,7 +41,7 @@
 	const SVG2 = document.querySelector('.graph2');
 	const GRAPH_WIDTH = 800 - 170 - 70;
 	const GRAPH_HEIGHT = 600 - 100 - 70;
-	const RR = 150; // радіус кругової діаграми
+	const RR = 150; // circle radius
 	let json, MAX_RATING, WIDTH_DAY, RATING_SUM = 0;
 
 	fetch('pigs.json')
@@ -152,7 +149,6 @@
 
 	function newDashesY() {
 		let g = newGroup('dashes');
-		// let max = getMaxRating();
 		let w = (GRAPH_HEIGHT) / 10;
 		for (let i = 0; i < 11; i++) {
 			let y = 100 + i * w;
@@ -214,11 +210,6 @@
 
 	function newPigGraph(pig, className) {
 		let g = newGroup(className);
-		// let x1 = 0 + 70;
-		// let x2 = 100 + 70;
-		// let y1 = -0 + 530;
-		// let y2 = -(100 * GRAPH_HEIGHT / MAX_RATING) + 530;
-		// g.appendChild(newLine(x1, y1, x2, y2));
 		for (let i = 1; i < pig.values.length; i++) {
 			let x1 = (i - 1) * WIDTH_DAY + 70;
 			let x2 = i * WIDTH_DAY + 70;
@@ -236,14 +227,12 @@
 	}
 
 	function drawGraph2() {
-		// json.pigs[2].fullRating = 21837;
-		// RATING_SUM = json.pigs.reduce((a, e) => +e.fullRating + a, 0);
 		let g = newGroup('circle-graph');
 		let halfPI = Math.PI / 2;
-		let angle1 = 0; //- Math.PI / 2;
+		let angle1 = 0;
 		
 		json.pigs.forEach(function(pig, i){
-			let angle2 = pig.fullRating / RATING_SUM * 2 * Math.PI;// - Math.PI / 2;
+			let angle2 = pig.fullRating / RATING_SUM * 2 * Math.PI;
 			let x1 = Math.cos(angle1 - halfPI) * RR + 200;
 			let y1 = Math.sin(angle1 - halfPI) * RR + 200;
 			let x2 = Math.cos(angle2 + angle1 - halfPI) * RR + 200;
