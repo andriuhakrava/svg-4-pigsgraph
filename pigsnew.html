@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<style>
+	body { font-family: sans-serif; }
+	svg { display: block; border: 1px solid silver; }
+	svg.graph1 { width: 800px; height: 600px; }
+	svg.graph2 { width: 600px; height: 400px; }
+	.arrow line { stroke: #555; stroke-width: 3; stroke-linecap: round; }
+	.dashes line { stroke: #555; stroke-width: 3; stroke-linecap: round; }
+	.values text { fill: green; font-size: 15px; }
+	.axis-y text { fill: grey; font-size: 15px; text-anchor: end; }
+	.graphics line { stroke-width: 5; stroke-linecap: round; }
+	.graphics text { fill: black; stroke: none; text-anchor: middle; opacity: 0; }
+	.graphics circle { fill: yellow; stroke-width: 3; cursor: help; }
+	.graphics circle:hover { fill: aqua; stroke-width: 3; }
+	.graphics circle:hover + text { opacity: 1 }
+	.graphics .pig0 { stroke: green; }
+	.graphics .pig1 { stroke: blue; }
+	.graphics .pig2 { stroke: orange; }
+	.legend text { fill: #333; font-size: 18px;  }
+	.legend rect { stroke: #333; stroke-width: 1.5; }
+	.legend .pig0 { fill: green; }
+	.legend .pig1 { fill: blue; }
+	.legend .pig2 { fill: orange; }
+	.circle-graph path { stroke: black; stroke-width: 2.5; }
+	.circle-graph .pig0 { fill: green; }
+	.circle-graph .pig1 { fill: blue; }
+	.circle-graph .pig2 { fill: orange; }
+</style>
+<body>
+	<!-- <span></span>
+	<svg viewBox=" 0 0 800 600"></svg> -->
+	<!-- <div class="svg"></div> -->
+	<svg class="graph1" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg"></svg>
+	<br />
+	<br />
+	<svg class="graph2" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg"></svg>
+</body>
+<script>
+(function(){
+	const NS = 'http://www.w3.org/2000/svg';
+	const SVG = document.querySelector('.graph1');
+	const SVG2 = document.querySelector('.graph2');
+	const GRAPH_WIDTH = 800 - 170 - 70;
+	const GRAPH_HEIGHT = 600 - 100 - 70;
+	const RR = 150; // радіус кругової діаграми
+	let json, MAX_RATING, WIDTH_DAY, RATING_SUM = 0;
+
+	fetch('pigs.json')
+		.then(resp => resp.json())
+		.then(function(resp){
+			console.log(resp);
+			json = resp;
+			json.pigs.forEach(pig => RATING_SUM += pig.fullRating = pig.values.reduce((a, e) => +e + a, 0));	
+			MAX_RATING = getMaxRating();
+			drawSVG();
+			drawSVG2();
+		});
+
+	function drawSVG() {
+		drawAxises();
+		drawLegend(SVG);
+		drawGraph();
+	}
+
+	function drawSVG2() {
+		drawLegend(SVG2);
+		drawGraph2();
+	}
+
+	function newGroup(className) {
+		let g = document.createElementNS(NS, 'g');
+		g.setAttribute('class', className);
+		return g;
+	}
+
+	function newLine(x1, y1, x2, y2) {
+		let line = document.createElementNS(NS, 'line');
+		['x1', 'y1', 'x2', 'y2'].forEach((e, i) => line.setAttribute(e, arguments[i]));
+		return line;
+	}
+
+	function newCircle(x, y){
+		let circle = document.createElementNS(NS, 'circle');
+		circle.setAttribute('cx', x);
+		circle.setAttribute('cy', y);
+		circle.setAttribute('r', 7);
+		return circle;
+	}
+
+	function newText(x, y, text) {
+		let t = document.createElementNS(NS, 'text');
+		t.setAttribute('x', x);
+		t.setAttribute('y', y);
+		t.innerHTML = text;
+		return t;
+	}
+
+	function newRect(x, y, className) {
+		let rect = document.createElementNS(NS, 'rect');
+		rect.setAttribute('class', className);
+		let arr = [x, y, 40, 24, 5, 5];
+		['x', 'y', 'width', 'height', 'rx', 'ry'].forEach((e, i) => {
+			rect.setAttribute(e, arr[i]);
+		});
+		return rect;
+	}
+
+	function newPath(d, className) {
+		let path = document.createElementNS(NS, 'path');
+		path.setAttribute('d', d);
+		path.setAttribute('class', className);
+		return path;
+	}
+
+	function newArrow(pc, p1, p2, p3) {
+		let g = newGroup('arrow');
+		g.appendChild(newLine(...pc, ...p1));
+		g.appendChild(newLine(...pc, ...p2));
+		g.appendChild(newLine(...pc, ...p3));
+		return g;
+	}
+
+	function drawAxises() {
+		let gAxisX = newGroup('axis-x');
+		gAxisX.appendChild(newArrow([690,530], [60,530], [670,520], [670,540]));
+		gAxisX.appendChild(newDashesX());
+		gAxisX.appendChild(newValuesX());
+
+		let gAxisY = newGroup('axis-y');
+		gAxisY.appendChild(newArrow([60,40], [60,530], [50,60], [70,60]));
+		gAxisY.appendChild(newDashesY());
+		gAxisY.appendChild(newValuesY());
+
+		let gAxises = newGroup('axises');
+		gAxises.appendChild(gAxisX);
+		gAxises.appendChild(gAxisY);	
+		SVG.appendChild(gAxises);
+	}
+
+	function newDashesX(){
+		let g = newGroup('dashes');
+		let n = json.dates.length;
+		WIDTH_DAY = (GRAPH_WIDTH) / (n - 1);
+		for (let i = 0; i < n; i++) {
+			let x = 70 + i * WIDTH_DAY;
+			g.appendChild(newLine(x, 528, x, 536));
+		}
+		return g;
+	}
+
+	function newDashesY() {
+		let g = newGroup('dashes');
+		// let max = getMaxRating();
+		let w = (GRAPH_HEIGHT) / 10;
+		for (let i = 0; i < 11; i++) {
+			let y = 100 + i * w;
+			g.appendChild(newLine(54, y, 62, y));
+		}
+		return g;
+	}
+
+	function newValuesX() {
+		let g = newGroup('values');
+		let n = json.dates.length;
+		let w = (GRAPH_WIDTH) / (n - 1);
+
+		for (let i = 0; i < n; i++) {
+			let x = 70 + i * w - 22;
+			g.appendChild(newText(x, 564, json.dates[i]));
+		}
+		return g;
+	}
+
+	function newValuesY() {
+		let g = newGroup('values');
+		let w = (GRAPH_HEIGHT) / 10;
+		for (let i = 10; i >= 0; i--) {
+			let y = 100 + i * w + 4;
+			g.appendChild(newText(42, y, Math.round(MAX_RATING / 10 * (10 - i))));
+		}
+		return g;
+	}
+
+	function getMaxRating() {
+		let max = 0;
+		json.pigs.forEach(pig => pig.values.forEach(p => {
+			p = +p;
+			if (p > max) max = p;
+		}))
+		return max;
+	}
+
+	function drawLegend(svg) {
+		let firstSVG = svg.classList.contains('graph1');
+		let g = newGroup('legend');
+		for (let i = 0; i < json.pigs.length; i++){
+			let x = firstSVG ? 70 + GRAPH_WIDTH + 30 : 440;
+			let y = (firstSVG ? 100 : 40) + i * 40;
+			g.appendChild(newRect(x, y, 'pig' + i));
+			g.appendChild(newText(x + 50, y + 18, json.pigs[i].name));
+		}
+		svg.appendChild(g);
+	}
+
+	function drawGraph() {
+		let g = newGroup('graphics');
+		for (let i = 0; i < json.pigs.length; i++) {
+			g.appendChild(newPigGraph(json.pigs[i], `pig${i}`));
+		}
+		SVG.appendChild(g);
+	}
+
+	function newPigGraph(pig, className) {
+		let g = newGroup(className);
+		// let x1 = 0 + 70;
+		// let x2 = 100 + 70;
+		// let y1 = -0 + 530;
+		// let y2 = -(100 * GRAPH_HEIGHT / MAX_RATING) + 530;
+		// g.appendChild(newLine(x1, y1, x2, y2));
+		for (let i = 1; i < pig.values.length; i++) {
+			let x1 = (i - 1) * WIDTH_DAY + 70;
+			let x2 = i * WIDTH_DAY + 70;
+			let y1 = -(pig.values[i - 1] * GRAPH_HEIGHT / MAX_RATING) + 530;
+			let y2 = -(pig.values[i] * GRAPH_HEIGHT / MAX_RATING) + 530;
+			g.appendChild(newLine(x1, y1, x2, y2));
+		}
+		for (let i = 0; i < pig.values.length; i++){
+			let x = i * WIDTH_DAY + 70;
+			let y = -(pig.values[i] * GRAPH_HEIGHT / MAX_RATING) + 530;
+			g.appendChild(newCircle(x, y));
+			g.appendChild(newText(x, y - 16, pig.values[i]));
+		}
+		return g;
+	}
+
+	function drawGraph2() {
+		// json.pigs[2].fullRating = 21837;
+		// RATING_SUM = json.pigs.reduce((a, e) => +e.fullRating + a, 0);
+		let g = newGroup('circle-graph');
+		let halfPI = Math.PI / 2;
+		let angle1 = 0; //- Math.PI / 2;
+		
+		json.pigs.forEach(function(pig, i){
+			let angle2 = pig.fullRating / RATING_SUM * 2 * Math.PI;// - Math.PI / 2;
+			let x1 = Math.cos(angle1 - halfPI) * RR + 200;
+			let y1 = Math.sin(angle1 - halfPI) * RR + 200;
+			let x2 = Math.cos(angle2 + angle1 - halfPI) * RR + 200;
+			let y2 = Math.sin(angle2 + angle1 - halfPI) * RR + 200;
+			let largeArcFlag = pig.fullRating / RATING_SUM > 0.5 ? 1 : 0; 
+			let d = `M 200,200 L ${x1}, ${y1} A ${RR},${RR} 0 ${largeArcFlag} 1 ${x2}, ${y2}, Z`;
+			g.appendChild(newPath(d, 'pig' + i));
+			angle1 += angle2;
+		});
+		SVG2.appendChild(g);
+	}
+	
+})();
+</script>
+</html>
